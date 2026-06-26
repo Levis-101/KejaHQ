@@ -18,6 +18,12 @@ create table if not exists public.profiles (
   created_at  timestamptz default now() not null
 );
 
+-- Ensure columns exist (in case table was created before these columns were added)
+alter table public.profiles
+  add column if not exists full_name text,
+  add column if not exists phone text,
+  add column if not exists avatar_url text;
+
 -- Auto-create a profile row whenever a user signs up
 create or replace function public.handle_new_user()
 returns trigger
