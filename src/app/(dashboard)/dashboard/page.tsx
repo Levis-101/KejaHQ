@@ -262,11 +262,14 @@ export default async function DashboardPage() {
           {/* ── Quick Actions ── */}
           <div className="space-y-4">
             <h2 className="font-semibold">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link href="/properties/new" className="btn-primary">
                 + Add Property
               </Link>
-              <Link href="/payments/new" className="btn-secondary">
+              <Link href="/finance" className="btn-secondary">
+                Financial Overview
+              </Link>
+              <Link href="/payments/new" className="btn-outline">
                 Record Payment
               </Link>
               <Link href="/tenants/new" className="btn-outline">
