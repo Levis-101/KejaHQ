@@ -58,8 +58,12 @@ create table if not exists public.properties (
 -- ──────────────────────────────────────────────
 -- 3. UNITS
 -- Individual apartment/unit within a property
--- ──────────────────────────────────────────────
-create type if not exists unit_status as enum ('vacant', 'occupied', 'maintenance');
+-- ────────────────────────────────────────────--
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'unit_status') THEN
+    CREATE TYPE unit_status AS ENUM ('vacant', 'occupied', 'maintenance');
+  END IF;
+END $$;
 
 create table if not exists public.units (
   id            uuid default uuid_generate_v4() primary key,
@@ -116,9 +120,17 @@ create trigger on_tenant_added
 -- ──────────────────────────────────────────────
 -- 5. MAINTENANCE REQUESTS
 -- Logged issues for units (Phase 2 feature — schema ready now)
--- ──────────────────────────────────────────────
-create type if not exists maintenance_status as enum ('open', 'in_progress', 'resolved');
-create type if not exists maintenance_priority as enum ('low', 'medium', 'high', 'urgent');
+-- ────────────────────────────────────────────--
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'maintenance_status') THEN
+    CREATE TYPE maintenance_status AS ENUM ('open', 'in_progress', 'resolved');
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'maintenance_priority') THEN
+    CREATE TYPE maintenance_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+  END IF;
+END $$;
 
 create table if not exists public.maintenance_requests (
   id            uuid default uuid_generate_v4() primary key,
@@ -135,9 +147,17 @@ create table if not exists public.maintenance_requests (
 -- ──────────────────────────────────────────────
 -- 6. PAYMENTS
 -- Rent payments made by tenants
--- ──────────────────────────────────────────────
-create type if not exists payment_status as enum ('pending', 'completed', 'failed', 'refunded');
-create type if not exists payment_method as enum ('cash', 'bank_transfer', 'mobile_money', 'credit_card', 'other');
+-- ────────────────────────────────────────────--
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+    CREATE TYPE payment_status AS ENUM ('pending', 'completed', 'failed', 'refunded');
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method') THEN
+    CREATE TYPE payment_method AS ENUM ('cash', 'bank_transfer', 'mobile_money', 'credit_card', 'other');
+  END IF;
+END $$;
 
 create table if not exists public.payments (
   id              uuid default uuid_generate_v4() primary key,
