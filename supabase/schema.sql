@@ -185,53 +185,74 @@ alter table public.maintenance_requests enable row level security;
 alter table public.payments             enable row level security;
 
 -- Profiles: users see only their own profile
-create policy "Own profile" on public.profiles
-  for all using (auth.uid() = id);
+drop policy if exists "Own profile" on public.profiles;
+create policy "Own profile"
+  on public.profiles
+  for all
+  using (auth.uid() = id);
 
 -- Properties: landlords see only their own properties
-create policy "Own properties" on public.properties
-  for all using (auth.uid() = owner_id);
+drop policy if exists "Own properties" on public.properties;
+create policy "Own properties"
+  on public.properties
+  for all
+  using (auth.uid() = owner_id);
 
 -- Units: visible if the landlord owns the parent property
-create policy "Own units" on public.units
-  for all using (
+drop policy if exists "Own units" on public.units;
+create policy "Own units"
+  on public.units
+  for all
+  using (
     exists (
       select 1 from public.properties
-      where id = units.property_id
+      where id = public.units.property_id
         and owner_id = auth.uid()
     )
   );
 
 -- Tenants: visible if the landlord owns the unit's property
-create policy "Own tenants" on public.tenants
-  for all using (
+drop policy if exists "Own tenants" on public.tenants;
+create policy "Own tenants"
+  on public.tenants
+  for all
+  using (
     exists (
-      select 1 from public.units u
+      select 1
+      from public.units u
       join public.properties p on p.id = u.property_id
-      where u.id = tenants.unit_id
+      where u.id = public.tenants.unit_id
         and p.owner_id = auth.uid()
     )
   );
 
 -- Maintenance: visible to the property owner
-create policy "Own maintenance requests" on public.maintenance_requests
-  for all using (
+drop policy if exists "Own maintenance requests" on public.maintenance_requests;
+create policy "Own maintenance requests"
+  on public.maintenance_requests
+  for all
+  using (
     exists (
-      select 1 from public.units u
+      select 1
+      from public.units u
       join public.properties p on p.id = u.property_id
-      where u.id = maintenance_requests.unit_id
+      where u.id = public.maintenance_requests.unit_id
         and p.owner_id = auth.uid()
     )
   );
 
 -- Payments: visible if the landlord owns the property associated with the payment
-create policy "Own payments" on public.payments
-  for all using (
+drop policy if exists "Own payments" on public.payments;
+create policy "Own payments"
+  on public.payments
+  for all
+  using (
     exists (
-      select 1 from public.tenants t
+      select 1
+      from public.tenants t
       join public.units u on u.id = t.unit_id
       join public.properties p on p.id = u.property_id
-      where t.id = payments.tenant_id
+      where t.id = public.payments.tenant_id
         and p.owner_id = auth.uid()
     )
   );
