@@ -59,7 +59,7 @@ create table if not exists public.properties (
 -- 3. UNITS
 -- Individual apartment/unit within a property
 -- ──────────────────────────────────────────────
-create type unit_status as enum ('vacant', 'occupied', 'maintenance');
+create type if not exists unit_status as enum ('vacant', 'occupied', 'maintenance');
 
 create table if not exists public.units (
   id            uuid default uuid_generate_v4() primary key,
@@ -117,8 +117,8 @@ create trigger on_tenant_added
 -- 5. MAINTENANCE REQUESTS
 -- Logged issues for units (Phase 2 feature — schema ready now)
 -- ──────────────────────────────────────────────
-create type maintenance_status as enum ('open', 'in_progress', 'resolved');
-create type maintenance_priority as enum ('low', 'medium', 'high', 'urgent');
+create type if not exists maintenance_status as enum ('open', 'in_progress', 'resolved');
+create type if not exists maintenance_priority as enum ('low', 'medium', 'high', 'urgent');
 
 create table if not exists public.maintenance_requests (
   id            uuid default uuid_generate_v4() primary key,
@@ -136,8 +136,8 @@ create table if not exists public.maintenance_requests (
 -- 6. PAYMENTS
 -- Rent payments made by tenants
 -- ──────────────────────────────────────────────
-create type payment_status as enum ('pending', 'completed', 'failed', 'refunded');
-create type payment_method as enum ('cash', 'bank_transfer', 'mobile_money', 'credit_card', 'other');
+create type if not exists payment_status as enum ('pending', 'completed', 'failed', 'refunded');
+create type if not exists payment_method as enum ('cash', 'bank_transfer', 'mobile_money', 'credit_card', 'other');
 
 create table if not exists public.payments (
   id              uuid default uuid_generate_v4() primary key,
@@ -145,10 +145,10 @@ create table if not exists public.payments (
   unit_id         uuid references public.units(id) on delete set null,
   amount          numeric(12, 2) not null,
   payment_date    date not null,
-  payment_period  date not null,  -- The month this payment covers (e.g., 2024-01-01 for January 2024)
+  payment_period  text not null,       -- e.g. "2024-01" for January 2024
   payment_method  payment_method,
   status          payment_status default 'pending',
-  transaction_id  text,           -- External transaction ID from payment processor
+  transaction_id  text,
   notes           text,
   created_at      timestamptz default now() not null
 );
@@ -200,42 +200,6 @@ create policy "Own maintenance requests" on public.maintenance_requests
       select 1 from public.units u
       join public.properties p on p.id = u.property_id
       where u.id = maintenance_requests.unit_id
-        and p.owner_id = auth.uid()
-    )
-  );
-
--- ──────────────────────────────────────────────
--- 6. PAYMENTS
--- Rent payments made by tenants
--- ──────────────────────────────────────────────
-create type payment_method as enum ('cash', 'bank_transfer', 'mobile_money', 'credit_card', 'other');
-create type payment_status as enum ('pending', 'completed', 'failed', 'refunded');
-
-create table if not exists public.payments (
-  id              uuid default uuid_generate_v4() primary key,
-  tenant_id       uuid references public.tenants(id) on delete set null,
-  unit_id         uuid references public.units(id) on delete set null,
-  amount          numeric(12, 2) not null,
-  payment_date    date not null,
-  payment_period  text not null,       -- e.g. "2024-01" for January 2024
-  payment_method  payment_method,
-  status          payment_status default 'pending',
-  transaction_id  text,
-  notes           text,
-  created_at      timestamptz default now() not null
-);
-
--- Row Level Security for payments
-alter table public.payments enable row level security;
-
--- Payments: visible if the landlord owns the property associated with the payment
-create policy "Own payments" on public.payments
-  for all using (
-    exists (
-      select 1 from public.tenants t
-      join public.units u on u.id = t.unit_id
-      join public.properties p on p.id = u.property_id
-      where t.id = payments.tenant_id
         and p.owner_id = auth.uid()
     )
   );
