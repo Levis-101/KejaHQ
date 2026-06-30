@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { getUser, createServerSupabaseClient } from '@/lib/supabase-server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
+import type { Database } from '@/lib/supabase'
 
 export default async function DashboardLayout({
   children,
@@ -22,7 +23,7 @@ export default async function DashboardLayout({
     .from('profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .single() as { data: { full_name: string | null } | null; error: any }
 
   const displayName = profile?.full_name || user.email?.split('@')[0] || 'Landlord'
 
