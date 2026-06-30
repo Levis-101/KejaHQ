@@ -1,3 +1,5 @@
+'use client';
+
 import { redirect } from 'next/navigation'
 import { getUser, createServerSupabaseClient } from '@/lib/supabase-server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
