@@ -31,6 +31,7 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
+  set local row_security = off;
   insert into public.profiles (id, full_name, phone)
   values (
     new.id,
@@ -109,6 +110,7 @@ returns trigger
 language plpgsql
 as $$
 begin
+  set local row_security = off;
   if new.unit_id is not null then
     update public.units
     set status = 'occupied'
