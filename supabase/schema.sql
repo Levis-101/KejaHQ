@@ -9,7 +9,7 @@ create extension if not exists "uuid-ossp";
 -- ──────────────────────────────────────────────
 -- 1. PROFILES
 -- Extends Supabase auth.users with landlord data
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 create table if not exists public.profiles (
   id          uuid references auth.users(id) on delete cascade primary key,
   full_name   text,
@@ -23,6 +23,10 @@ alter table public.profiles
   add column if not exists full_name text,
   add column if not exists phone text,
   add column if not exists avatar_url text;
+
+-- Drop email column if it exists (we don't store email in profiles)
+alter table public.profiles
+  drop column if exists email;
 
 -- Auto-create a profile row whenever a user signs up
 create or replace function public.handle_new_user()
@@ -51,7 +55,7 @@ create trigger on_auth_user_created
 -- ──────────────────────────────────────────────
 -- 2. PROPERTIES
 -- A building or property owned by a landlord
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 create table if not exists public.properties (
   id          uuid default uuid_generate_v4() primary key,
   owner_id    uuid references public.profiles(id) on delete cascade not null,
@@ -87,7 +91,7 @@ create table if not exists public.units (
   unique (property_id, unit_number)    -- no two units with same number in same property
 );
 
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 -- 4. TENANTS
 -- A tenant occupying a unit
 -- ────────────────────────────────────────────--
@@ -127,7 +131,7 @@ create trigger on_tenant_added
   for each row
   execute procedure public.update_unit_on_tenant_add();
 
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 -- 5. MAINTENANCE REQUESTS
 -- Logged issues for units (Phase 2 feature — schema ready now)
 -- ────────────────────────────────────────────--
@@ -154,7 +158,7 @@ create table if not exists public.maintenance_requests (
   created_at    timestamptz default now() not null
 );
 
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 -- 6. PAYMENTS
 -- Rent payments made by tenants
 -- ────────────────────────────────────────────--
@@ -175,7 +179,7 @@ create table if not exists public.payments (
   unit_id         uuid references public.units(id) on delete set null,
   amount          numeric(12, 2) not null,
   payment_date    date not null,
-  payment_period  text not null,       -- e.g. "2024-01" for January 2024
+  payment_period  text not null,       -- e.g. "2024-01" for January 20 for January 2024
   payment_method  payment_method,
   status          payment_status default 'pending',
   transaction_id  text,
@@ -183,7 +187,7 @@ create table if not exists public.payments (
   created_at      timestamptz default now() not null
 );
 
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 -- ROW LEVEL SECURITY (RLS)
 -- Landlords can only see their own data
 -- ────────────────────────────────────────────--
@@ -262,8 +266,6 @@ create policy "Own payments"
       from public.tenants t
       join public.units u on u.id = t.unit_id
       join public.properties p on p.id = u.property_id
-      where t.id = public.payments.tenant_id
-        and public.properties p on p.id = u.property_id
       where t.id = public.payments.tenant_id
         and p.owner_id = auth.uid()
     )
