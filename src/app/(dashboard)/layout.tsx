@@ -17,11 +17,14 @@ export default async function DashboardLayout({
 
   // Fetch landlord profile
   const supabase = await createServerSupabaseClient()
-  const { data: profile } = await supabase
+  const { data } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
+
+  // Assert the expected type so TypeScript knows `full_name` exists
+  const profile = data as { full_name: string | null } | null
 
   const displayName = profile?.full_name || user.email?.split('@')[0] || 'Landlord'
 
