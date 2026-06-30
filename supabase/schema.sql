@@ -45,7 +45,8 @@ $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+  for each row
+  execute procedure public.handle_new_user();
 
 -- ──────────────────────────────────────────────
 -- 2. PROPERTIES
@@ -89,7 +90,7 @@ create table if not exists public.units (
 -- ──────────────────────────────────────────────
 -- 4. TENANTS
 -- A tenant occupying a unit
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 create table if not exists public.tenants (
   id            uuid default uuid_generate_v4() primary key,
   unit_id       uuid references public.units(id) on delete set null,
@@ -123,7 +124,8 @@ $$;
 drop trigger if exists on_tenant_added on public.tenants;
 create trigger on_tenant_added
   after insert on public.tenants
-  for each row execute procedure public.update_unit_on_tenant_add();
+  for each row
+  execute procedure public.update_unit_on_tenant_add();
 
 -- ──────────────────────────────────────────────
 -- 5. MAINTENANCE REQUESTS
@@ -184,7 +186,7 @@ create table if not exists public.payments (
 -- ──────────────────────────────────────────────
 -- ROW LEVEL SECURITY (RLS)
 -- Landlords can only see their own data
--- ──────────────────────────────────────────────
+-- ────────────────────────────────────────────--
 alter table public.profiles             enable row level security;
 alter table public.properties           enable row level security;
 alter table public.units                enable row level security;
@@ -260,6 +262,8 @@ create policy "Own payments"
       from public.tenants t
       join public.units u on u.id = t.unit_id
       join public.properties p on p.id = u.property_id
+      where t.id = public.payments.tenant_id
+        and public.properties p on p.id = u.property_id
       where t.id = public.payments.tenant_id
         and p.owner_id = auth.uid()
     )
